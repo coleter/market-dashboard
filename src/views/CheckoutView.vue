@@ -8,7 +8,7 @@
       <h1 class="title is-3 has-text-centered mb-5">Market Checkout Form</h1>
 
       <!-- Form -->
-      <form class="box">
+      <form class="box" @submit.prevent="handleSubmit">
         <!-- Barcode -->
         <div class="field">
           <label class="label">Market Barcode</label>
@@ -16,6 +16,7 @@
             <input
               class="input"
               type="number"
+              v-model="barcode"
               placeholder="Scan or enter the number on the market card"
               required
               autofocus
@@ -28,16 +29,17 @@
           <label class="label">Person Type</label>
           <div class="control">
             <label class="radio">
-              <input type="radio" name="personType" value="Parent/Caregiver" required checked />
+              <input type="radio" value="Parent/Caregiver" v-model="personType" required />
               Parent/Caregiver
             </label>
             <br />
             <label class="radio">
-              <input type="radio" name="personType" value="Staff" /> Staff
+              <input type="radio" value="Staff" v-model="personType" />
+              Staff
             </label>
             <br />
             <label class="radio">
-              <input type="radio" name="personType" value="Staff - Shopping for a Family" />
+              <input type="radio" value="Staff - Shopping for a Family" v-model="personType" />
               Staff - Shopping for a Family
             </label>
           </div>
@@ -47,7 +49,7 @@
         <div class="field">
           <label class="label">Please enter the total weight of food (in lbs).</label>
           <div class="control">
-            <input class="input" type="number" step="1" required />
+            <input class="input" type="number" step="1" v-model="foodWeight" required />
           </div>
         </div>
 
@@ -58,10 +60,36 @@
           </div>
         </div>
       </form>
+
       <!-- Records link -->
-      <a href="/records" class="button is-link">Records View</a>
+      <router-link to="/records" class="button is-link mt-3">Records View</router-link>
     </div>
   </section>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const barcode = ref('')
+const personType = ref('Parent/Caregiver')
+const foodWeight = ref<number | null>(null)
+
+onMounted(() => {
+  // Pre-fill barcode if passed in query
+  if (route.query.barcode && typeof route.query.barcode === 'string') {
+    barcode.value = route.query.barcode
+  }
+})
+
+function handleSubmit() {
+  console.log('Submitted:', {
+    barcode: barcode.value,
+    personType: personType.value,
+    foodWeight: foodWeight.value,
+  })
+  // TODO: Replace with your submit logic
+}
+</script>
