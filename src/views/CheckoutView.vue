@@ -66,7 +66,7 @@
       </form>
 
       <!-- Records link -->
-      <router-link to="/records" class="button is-link mt-3">Records View</router-link>
+      <router-link to="/records" class="button is-link mt-3">Card Lookup</router-link>
     </div>
   </section>
 </template>

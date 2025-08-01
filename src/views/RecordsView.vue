@@ -1,7 +1,7 @@
 <template>
   <section class="section">
     <div class="container" style="max-width: 800px">
-      <h1 class="title is-3 has-text-centered mb-5">Market Records</h1>
+      <h1 class="title is-3 has-text-centered mb-5">Market Card Lookup</h1>
 
       <!-- Filter + Search Row -->
       <div class="columns is-vcentered mb-4">
@@ -69,7 +69,7 @@
       </table>
 
       <!-- Checkout Button -->
-      <a href="/." class="button is-link mt-4">Checkout View</a>
+      <a href="/." class="button is-link mt-4">Back to Checkout</a>
     </div>
   </section>
 </template>
