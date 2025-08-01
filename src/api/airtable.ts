@@ -34,14 +34,29 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
   })
 }
 
+const PERSON_TYPE_MAP: Record<string, string> = {
+  'Parent/Caregiver': 'Parent/Caregiver | Padre/Cuidador',
+  Staff: 'Staff / Empleado',
+  'Staff - Shopping for a Family': 'Staff - Shopping for a Family',
+}
+
 export async function submitCheckout(barcode: string, personType: string, foodWeight: number) {
-  await base(checkout_id).create([
+  const airtablePersonType = PERSON_TYPE_MAP[personType]
+  const payload = [
     {
       fields: {
-        Barcode: barcode,
-        Type: personType,
+        Barcode: String(barcode),
+        Type: airtablePersonType,
         Pounds: foodWeight,
       },
     },
-  ])
+  ]
+
+  try {
+    const records = await base(checkout_id).create(payload, { typecast: true })
+    return records[0]
+  } catch (err) {
+    console.error('Airtable error:', err)
+    throw err
+  }
 }

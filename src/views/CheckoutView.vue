@@ -17,12 +17,16 @@
               class="input"
               type="number"
               v-model="barcode"
+              ref="barcodeInput"
               placeholder="Scan or enter the number on the market card"
               required
               autofocus
             />
           </div>
         </div>
+
+        <!-- Success Indicator -->
+        <p v-if="successMessage" class="has-text-success has-text-centered mt-2">Submitted!</p>
 
         <!-- Person Type -->
         <div class="field">
@@ -68,41 +72,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { submitCheckout } from '../api/airtable'
 
 const route = useRoute()
+const router = useRouter()
 
 const barcode = ref('')
 const personType = ref('Parent/Caregiver')
 const foodWeight = ref<number | null>(null)
+const successMessage = ref(false)
+const barcodeInput = ref<HTMLInputElement | null>(null)
 
 onMounted(() => {
   // Pre-fill barcode if passed in query
   if (route.query.barcode && typeof route.query.barcode === 'string') {
     barcode.value = route.query.barcode
   }
+
+  // Focus the barcode field
+  nextTick(() => barcodeInput.value?.focus())
 })
 
-import { submitCheckout } from '../api/airtable'
-
 async function handleSubmit() {
+  console.log('Submitting checkout with values:', {
+    barcode: barcode.value,
+    personType: personType.value,
+    foodWeight: foodWeight.value,
+  })
+
+  // Clean barcode (remove spaces)
+  barcode.value = barcode.value.replace(/\s+/g, '')
+
+  // Validate fields
+  if (!barcode.value || !personType.value || foodWeight.value == null) {
+    alert('Please fill out all fields before submitting.')
+    return
+  }
+
+  // Validate barcode format
+  const barcodeRegex = /^2000\d{4}$/
+  if (!barcodeRegex.test(barcode.value)) {
+    alert('Invalid barcode. It should be in the format 2000xxxx.')
+    return
+  }
+
+  // Validate weight
+  if (foodWeight.value <= 0 || foodWeight.value > 99) {
+    alert('Please enter a food weight between 1 and 99 lbs.')
+    return
+  }
+
   try {
-    if (!barcode.value || !personType.value || !foodWeight.value) {
-      alert('Please fill out all fields before submitting.')
-      return
-    }
+    await submitCheckout(barcode.value, personType.value, foodWeight.value!)
 
-    await submitCheckout(barcode.value, personType.value, foodWeight.value)
-    alert('Checkout submitted successfully!')
+    // Show success indicator
+    successMessage.value = true
+    setTimeout(() => (successMessage.value = false), 2000) // hide after 2 sec
 
-    // Reset form
+    // Clear form
     barcode.value = ''
     personType.value = 'Parent/Caregiver'
     foodWeight.value = null
+
+    // Focus barcode field for next scan
+    nextTick(() => barcodeInput.value?.focus())
+
+    // Clean the URL (remove ?barcode=...)
+    router.replace({ query: {} })
   } catch (err) {
-    console.error('Error submitting checkout:', err)
-    alert('Failed to submit checkout. Please try again.')
+    console.error('Airtable submission failed', err)
+    alert('Failed to submit checkout.')
   }
 }
 </script>
