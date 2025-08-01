@@ -3,6 +3,7 @@ import type { RecordEntry } from '../types/records'
 
 const base_id = 'appSr0epmnJWRp7LB'
 const enrollment_id = 'tblnNwBNUThIqVxiT'
+const checkout_id = 'tbleOEvpQyQvTnQap'
 const key = import.meta.env.VITE_AIRTABLE_TOKEN
 
 Airtable.configure({ endpointUrl: 'https://api.airtable.com', apiKey: key })
@@ -31,4 +32,16 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       affiliation: (record.get('Affiliation') as string) || '',
     }
   })
+}
+
+export async function submitCheckout(barcode: string, personType: string, foodWeight: number) {
+  await base(checkout_id).create([
+    {
+      fields: {
+        Barcode: barcode,
+        Type: personType,
+        Pounds: foodWeight,
+      },
+    },
+  ])
 }

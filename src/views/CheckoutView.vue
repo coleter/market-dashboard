@@ -84,12 +84,25 @@ onMounted(() => {
   }
 })
 
-function handleSubmit() {
-  console.log('Submitted:', {
-    barcode: barcode.value,
-    personType: personType.value,
-    foodWeight: foodWeight.value,
-  })
-  // TODO: Replace with your submit logic
+import { submitCheckout } from '../api/airtable'
+
+async function handleSubmit() {
+  try {
+    if (!barcode.value || !personType.value || !foodWeight.value) {
+      alert('Please fill out all fields before submitting.')
+      return
+    }
+
+    await submitCheckout(barcode.value, personType.value, foodWeight.value)
+    alert('Checkout submitted successfully!')
+
+    // Reset form
+    barcode.value = ''
+    personType.value = 'Parent/Caregiver'
+    foodWeight.value = null
+  } catch (err) {
+    console.error('Error submitting checkout:', err)
+    alert('Failed to submit checkout. Please try again.')
+  }
 }
 </script>
