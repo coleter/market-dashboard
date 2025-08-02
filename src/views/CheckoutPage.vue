@@ -54,7 +54,14 @@
           <div class="field">
             <label class="label">Please enter the total weight of food (in lbs).</label>
             <div class="control">
-              <input class="input" type="number" step="1" v-model="foodWeight" required />
+              <input
+                class="input"
+                type="number"
+                step="1"
+                v-model="foodWeight"
+                required
+                ref="foodWeightInput"
+              />
             </div>
           </div>
 
@@ -143,6 +150,7 @@ const personType = ref('Parent/Caregiver')
 const foodWeight = ref<number | null>(null)
 const successMessage = ref(false)
 const barcodeInput = ref<HTMLInputElement | null>(null)
+const foodWeightInput = ref<HTMLInputElement | null>(null)
 
 // Records
 const records = ref<RecordEntry[]>([])
@@ -155,7 +163,7 @@ const formSection = ref<HTMLElement | null>(null)
 function selectRecord(selectedBarcode: string) {
   barcode.value = selectedBarcode
   searchQuery.value = ''
-  nextTick(() => barcodeInput.value?.focus())
+  nextTick(() => foodWeightInput.value?.focus())
 }
 
 // Row color
