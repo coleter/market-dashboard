@@ -26,6 +26,35 @@
             </div>
           </div>
 
+          <!-- Under Barcode Input -->
+          <div v-if="selectedRecord" class="box mt-4">
+            <table class="table is-fullwidth">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Affiliation</th>
+                  <th>Last Checkout</th>
+                  <th>Info Complete?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ selectedRecord.name }}</td>
+                  <td>{{ selectedRecord.affiliation }}</td>
+                  <td>—</td>
+                  <!-- Placeholder for last checkout -->
+                  <td>
+                    <span
+                      :class="selectedRecord.hasAllInfo ? 'has-text-success' : 'has-text-danger'"
+                    >
+                      {{ selectedRecord.hasAllInfo ? 'Yes' : 'No' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <!-- Success Indicator -->
           <p v-if="successMessage" class="has-text-success has-text-centered mt-2">Submitted!</p>
 
@@ -160,11 +189,6 @@ const searchQuery = ref('')
 
 // Handle record click -> auto-fill barcode
 const formSection = ref<HTMLElement | null>(null)
-function selectRecord(selectedBarcode: string) {
-  barcode.value = selectedBarcode
-  searchQuery.value = ''
-  nextTick(() => foodWeightInput.value?.focus())
-}
 
 // Row color
 function rowClass(affiliation: string) {
@@ -238,6 +262,17 @@ onMounted(async () => {
     nextTick(() => barcodeInput.value?.focus())
   }
 })
+
+// More info section
+const selectedRecord = ref<RecordEntry | null>(null)
+
+function selectRecord(selectedBarcode: string) {
+  const match = records.value.find((r) => r.barcode === selectedBarcode)
+  if (match) selectedRecord.value = match
+  barcode.value = selectedBarcode
+  searchQuery.value = ''
+  nextTick(() => foodWeightInput.value?.focus())
+}
 </script>
 
 <style scoped>
