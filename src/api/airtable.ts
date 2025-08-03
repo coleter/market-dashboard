@@ -87,7 +87,7 @@ export async function submitCheckout(barcode: string, personType: string, foodWe
     },
   ]
 
-  console.log(`Submitted: \n${String(payload)}`)
+  console.log(`Fake submitted: \n${String(payload)}`)
 
   // try {
   //   const records = await base(checkout_id).create(payload, { typecast: true })

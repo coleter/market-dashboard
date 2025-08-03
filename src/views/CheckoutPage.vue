@@ -1,6 +1,6 @@
 <template>
   <section class="section">
-    <div class="container" style="max-width: 500px">
+    <div class="container" style="max-width: 1000px">
       <!-- Logo -->
       <figure class="image has-text-centered mb-5">
         <img src="/ClaytonLogoNew.png" alt="Clayton Logo" style="max-width: 500px; margin: auto" />
@@ -8,7 +8,7 @@
       <h1 class="title is-3 has-text-centered mb-5">Market Checkout Form</h1>
 
       <!-- Form -->
-      <div class="container" style="max-width: 500px" ref="formSection">
+      <div class="container" style="max-width: 1000px" ref="formSection">
         <form class="box" @submit.prevent="handleSubmit">
           <!-- Barcode -->
           <div class="field">
@@ -40,7 +40,7 @@
               <tbody>
                 <tr>
                   <td>{{ selectedRecord.name }}</td>
-                  <td>{{ selectedRecord.affiliation }}</td>
+                  <td>{{ formattedAffiliation }}</td>
                   <td>—</td>
                   <!-- Placeholder for last checkout -->
                   <td>
@@ -105,7 +105,7 @@
     </div>
 
     <!-- Records Section -->
-    <div class="container mt-6" style="max-width: 800px">
+    <div class="container mt-6" style="max-width: 1000px">
       <h2 class="title is-4 has-text-centered mb-4">Market Card Lookup</h2>
 
       <!-- Filter + Search Row -->
@@ -170,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { submitCheckout, fetchRecords } from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
@@ -192,8 +192,8 @@ const formSection = ref<HTMLElement | null>(null)
 
 // Row color
 function rowClass(affiliation: string) {
-  if (affiliation === 'Clayton Enrolled Program') return 'row-green'
-  if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-blue'
+  if (affiliation === 'Clayton Enrolled Program') return 'row-teal'
+  if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-orange'
   return ''
 }
 
@@ -226,11 +226,11 @@ async function handleSubmit() {
     return
   }
   if (!barcodeRegex.test(barcode.value)) {
-    alert('Invalid barcode. It should be in the format 2000xxxx.')
+    alert('Invalid barcode')
     return
   }
-  if (foodWeight.value <= 0 || foodWeight.value > 99) {
-    alert('Please enter a food weight between 1 and 99 lbs.')
+  if (foodWeight.value < 0 || foodWeight.value > 99) {
+    alert('Invalid food weight.')
     return
   }
 
@@ -250,7 +250,7 @@ async function handleSubmit() {
   }
 }
 
-// Load records once
+// Load records
 onMounted(async () => {
   loading.value = true
   try {
@@ -266,27 +266,41 @@ onMounted(async () => {
 // More info section
 const selectedRecord = ref<RecordEntry | null>(null)
 
+const formattedAffiliation = computed(() => {
+  if (!selectedRecord.value) return ''
+  if (selectedRecord.value.affiliation === 'Clayton Enrolled Program') return 'Enrolled'
+  if (selectedRecord.value.affiliation === 'Formerly Clayton Enrolled') return 'Community'
+  return selectedRecord.value.affiliation
+})
+
 function selectRecord(selectedBarcode: string) {
-  const match = records.value.find((r) => r.barcode === selectedBarcode)
-  if (match) selectedRecord.value = match
   barcode.value = selectedBarcode
   searchQuery.value = ''
   nextTick(() => foodWeightInput.value?.focus())
 }
+
+watch(barcode, (newVal) => {
+  const cleaned = newVal?.toString().trim() || ''
+  if (cleaned.length === 8) {
+    const match = records.value.find((r) => r.barcode.trim() === cleaned)
+    selectedRecord.value = match || null
+  } else {
+    selectedRecord.value = null
+  }
+})
 </script>
 
 <style scoped>
-/* Keep all your existing table + row styles */
 .table {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-radius: 10px;
   overflow: hidden;
 }
-.row-green {
-  background-color: rgba(122, 195, 150, 0.2);
+.row-teal {
+  background-color: rgba(122, 195, 189, 0.25);
 }
-.row-blue {
-  background-color: rgba(122, 180, 195, 0.2);
+.row-orange {
+  background-color: rgba(224, 149, 62, 0.2);
 }
 .clickable-row {
   cursor: pointer;
