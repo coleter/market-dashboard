@@ -26,7 +26,7 @@
             </div>
           </div>
 
-          <!-- Under Barcode Input -->
+          <!-- More info section -->
           <div v-if="selectedRecord" class="box mt-4">
             <table class="table is-fullwidth">
               <thead>
@@ -41,8 +41,9 @@
                 <tr>
                   <td>{{ selectedRecord.name }}</td>
                   <td>{{ formattedAffiliation }}</td>
-                  <td>—</td>
-                  <!-- Placeholder for last checkout -->
+                  <td>
+                    <span :class="lastCheckoutClass">{{ formattedLastCheckout }}</span>
+                  </td>
                   <td>
                     <span
                       :class="selectedRecord.hasAllInfo ? 'has-text-success' : 'has-text-danger'"
@@ -171,7 +172,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { submitCheckout, fetchRecords } from '../api/airtable'
+import { submitCheckout, fetchRecords, fetchCheckoutRecords } from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
 const barcode = ref('')
@@ -286,6 +287,37 @@ watch(barcode, (newVal) => {
     selectedRecord.value = match || null
   } else {
     selectedRecord.value = null
+  }
+})
+
+const lastCheckoutDate = ref<string | null>(null)
+const isRecentCheckout = computed(() => {
+  if (!lastCheckoutDate.value) return false
+  const diff = Date.now() - new Date(lastCheckoutDate.value).getTime()
+  return diff < 6 * 24 * 60 * 60 * 1000 // less than 6 days
+})
+
+const formattedLastCheckout = computed(() => {
+  if (!lastCheckoutDate.value) return '-'
+  const date = new Date(lastCheckoutDate.value)
+  return date.toLocaleDateString()
+})
+
+const lastCheckoutClass = computed(() => {
+  return isRecentCheckout.value ? 'has-text-danger' : ''
+})
+
+watch(selectedRecord, async (record) => {
+  lastCheckoutDate.value = null
+  if (record?.marketCheckouts?.length) {
+    const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
+    if (checkouts.length > 0) {
+      // Sort by date descending
+      checkouts.sort(
+        (a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime(),
+      )
+      lastCheckoutDate.value = checkouts[0].createdTime
+    }
   }
 })
 </script>
