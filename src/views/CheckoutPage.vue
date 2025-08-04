@@ -1,6 +1,6 @@
 <template>
   <section class="section">
-    <div class="container" style="max-width: 500px">
+    <div class="container" style="max-width: 1000px">
       <!-- Logo -->
       <figure class="image has-text-centered mb-5">
         <img src="/ClaytonLogoNew.png" alt="Clayton Logo" style="max-width: 500px; margin: auto" />
@@ -8,7 +8,7 @@
       <h1 class="title is-3 has-text-centered mb-5">Market Checkout Form</h1>
 
       <!-- Form -->
-      <div class="container" style="max-width: 500px" ref="formSection">
+      <div class="container" style="max-width: 1000px" ref="formSection">
         <form class="box" @submit.prevent="handleSubmit">
           <!-- Barcode -->
           <div class="field">
@@ -24,6 +24,36 @@
                 autofocus
               />
             </div>
+          </div>
+
+          <!-- More info section -->
+          <div v-if="selectedRecord" class="box mt-4">
+            <table class="table is-fullwidth">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Affiliation</th>
+                  <th>Last Checkout</th>
+                  <th>Info Complete?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ selectedRecord.name }}</td>
+                  <td>{{ formattedAffiliation }}</td>
+                  <td>
+                    <span :class="lastCheckoutClass">{{ formattedLastCheckout }}</span>
+                  </td>
+                  <td>
+                    <span
+                      :class="selectedRecord.hasAllInfo ? 'has-text-success' : 'has-text-danger'"
+                    >
+                      {{ selectedRecord.hasAllInfo ? 'Yes' : 'No' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- Success Indicator -->
@@ -76,7 +106,7 @@
     </div>
 
     <!-- Records Section -->
-    <div class="container mt-6" style="max-width: 800px">
+    <div class="container mt-6" style="max-width: 1000px">
       <h2 class="title is-4 has-text-centered mb-4">Market Card Lookup</h2>
 
       <!-- Filter + Search Row -->
@@ -141,8 +171,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { submitCheckout, fetchRecords } from '../api/airtable'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { submitCheckout, fetchRecords, fetchCheckoutRecords } from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
 const barcode = ref('')
@@ -160,16 +190,11 @@ const searchQuery = ref('')
 
 // Handle record click -> auto-fill barcode
 const formSection = ref<HTMLElement | null>(null)
-function selectRecord(selectedBarcode: string) {
-  barcode.value = selectedBarcode
-  searchQuery.value = ''
-  nextTick(() => foodWeightInput.value?.focus())
-}
 
 // Row color
 function rowClass(affiliation: string) {
-  if (affiliation === 'Clayton Enrolled Program') return 'row-green'
-  if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-blue'
+  if (affiliation === 'Clayton Enrolled Program') return 'row-teal'
+  if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-orange'
   return ''
 }
 
@@ -202,11 +227,11 @@ async function handleSubmit() {
     return
   }
   if (!barcodeRegex.test(barcode.value)) {
-    alert('Invalid barcode. It should be in the format 2000xxxx.')
+    alert('Invalid barcode')
     return
   }
-  if (foodWeight.value <= 0 || foodWeight.value > 99) {
-    alert('Please enter a food weight between 1 and 99 lbs.')
+  if (foodWeight.value < 0 || foodWeight.value > 99) {
+    alert('Invalid food weight.')
     return
   }
 
@@ -226,7 +251,7 @@ async function handleSubmit() {
   }
 }
 
-// Load records once
+// Load records
 onMounted(async () => {
   loading.value = true
   try {
@@ -238,20 +263,76 @@ onMounted(async () => {
     nextTick(() => barcodeInput.value?.focus())
   }
 })
+
+// More info section
+const selectedRecord = ref<RecordEntry | null>(null)
+
+const formattedAffiliation = computed(() => {
+  if (!selectedRecord.value) return ''
+  if (selectedRecord.value.affiliation === 'Clayton Enrolled Program') return 'Enrolled'
+  if (selectedRecord.value.affiliation === 'Formerly Clayton Enrolled') return 'Community'
+  return selectedRecord.value.affiliation
+})
+
+function selectRecord(selectedBarcode: string) {
+  barcode.value = selectedBarcode
+  searchQuery.value = ''
+  nextTick(() => foodWeightInput.value?.focus())
+}
+
+watch(barcode, (newVal) => {
+  const cleaned = newVal?.toString().trim() || ''
+  if (cleaned.length === 8) {
+    const match = records.value.find((r) => r.barcode.trim() === cleaned)
+    selectedRecord.value = match || null
+  } else {
+    selectedRecord.value = null
+  }
+})
+
+const lastCheckoutDate = ref<string | null>(null)
+const isRecentCheckout = computed(() => {
+  if (!lastCheckoutDate.value) return false
+  const diff = Date.now() - new Date(lastCheckoutDate.value).getTime()
+  return diff < 6 * 24 * 60 * 60 * 1000 // less than 6 days
+})
+
+const formattedLastCheckout = computed(() => {
+  if (!lastCheckoutDate.value) return '-'
+  const date = new Date(lastCheckoutDate.value)
+  return date.toLocaleDateString()
+})
+
+const lastCheckoutClass = computed(() => {
+  return isRecentCheckout.value ? 'has-text-danger' : ''
+})
+
+watch(selectedRecord, async (record) => {
+  lastCheckoutDate.value = null
+  if (record?.marketCheckouts?.length) {
+    const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
+    if (checkouts.length > 0) {
+      // Sort by date descending
+      checkouts.sort(
+        (a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime(),
+      )
+      lastCheckoutDate.value = checkouts[0].createdTime
+    }
+  }
+})
 </script>
 
 <style scoped>
-/* Keep all your existing table + row styles */
 .table {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-radius: 10px;
   overflow: hidden;
 }
-.row-green {
-  background-color: rgba(122, 195, 150, 0.2);
+.row-teal {
+  background-color: rgba(122, 195, 189, 0.25);
 }
-.row-blue {
-  background-color: rgba(122, 180, 195, 0.2);
+.row-orange {
+  background-color: rgba(224, 149, 62, 0.2);
 }
 .clickable-row {
   cursor: pointer;
