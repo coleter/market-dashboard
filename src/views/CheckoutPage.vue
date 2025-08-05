@@ -9,7 +9,7 @@
 
       <!-- Form -->
       <div class="container" style="max-width: 1000px" ref="formSection">
-        <form class="box" @submit.prevent="handleSubmit">
+        <form class="box" @submit.prevent="handleSubmit" @keydown.enter="handleEnterKey">
           <!-- Barcode -->
           <div class="field">
             <label class="label">Market Barcode</label>
@@ -285,6 +285,9 @@ watch(barcode, (newVal) => {
   if (cleaned.length === 8) {
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
     selectedRecord.value = match || null
+    if (match) {
+      nextTick(() => foodWeightInput.value?.focus())
+    }
   } else {
     selectedRecord.value = null
   }
@@ -320,6 +323,14 @@ watch(selectedRecord, async (record) => {
     }
   }
 })
+
+function handleEnterKey(event: KeyboardEvent) {
+  const target = event.target as HTMLInputElement
+  // Only allow Enter to submit if the active input is the pounds input
+  if (target !== foodWeightInput.value) {
+    event.preventDefault()
+  }
+}
 </script>
 
 <style scoped>
