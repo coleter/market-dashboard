@@ -284,9 +284,11 @@ watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
-    selectedRecord.value = match || null
     if (match) {
-      nextTick(() => foodWeightInput.value?.focus())
+      selectedRecord.value = match
+      selectRecord(cleaned)
+    } else {
+      selectedRecord.value = null
     }
   } else {
     selectedRecord.value = null
