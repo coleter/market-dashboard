@@ -341,8 +341,9 @@ function handleEnterKey(event: KeyboardEvent) {
   }
 }
 
-function handleSearchEnter() {
+function handleSearchEnter(event: KeyboardEvent) {
   if (filteredRecords.value.length === 1) {
+    event.preventDefault()
     selectRecord(filteredRecords.value[0].barcode)
   }
 }
