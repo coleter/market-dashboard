@@ -179,6 +179,7 @@ const barcode = ref('')
 const personType = ref('Parent/Caregiver')
 const foodWeight = ref<number | null>(null)
 const successMessage = ref(false)
+const allowEnterSubmit = ref(true)
 const barcodeInput = ref<HTMLInputElement | null>(null)
 const foodWeightInput = ref<HTMLInputElement | null>(null)
 
@@ -260,7 +261,6 @@ onMounted(async () => {
     console.error('Failed to load records:', err)
   } finally {
     loading.value = false
-    nextTick(() => barcodeInput.value?.focus())
   }
 })
 
@@ -277,7 +277,14 @@ const formattedAffiliation = computed(() => {
 function selectRecord(selectedBarcode: string) {
   barcode.value = selectedBarcode
   searchQuery.value = ''
-  nextTick(() => foodWeightInput.value?.focus())
+  allowEnterSubmit.value = false // temporarily block Enter submit
+
+  nextTick(() => {
+    foodWeightInput.value?.focus()
+    setTimeout(() => {
+      allowEnterSubmit.value = true
+    }, 300)
+  })
 }
 
 watch(barcode, (newVal) => {
@@ -328,8 +335,7 @@ watch(selectedRecord, async (record) => {
 
 function handleEnterKey(event: KeyboardEvent) {
   const target = event.target as HTMLInputElement
-  // Only allow Enter to submit if the active input is the pounds input
-  if (target !== foodWeightInput.value) {
+  if (target !== foodWeightInput.value || !allowEnterSubmit.value) {
     event.preventDefault()
   }
 }
