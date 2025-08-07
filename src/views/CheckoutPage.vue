@@ -141,8 +141,8 @@
       <table class="table is-fullwidth is-hoverable">
         <thead>
           <tr>
-            <th>Barcode</th>
-            <th>Name</th>
+            <th style="width: 33%">Barcode</th>
+            <th style="width: 66%">Name</th>
           </tr>
         </thead>
         <tbody>
