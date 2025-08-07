@@ -132,6 +132,7 @@
               type="text"
               v-model="searchQuery"
               placeholder="Search by barcode or name"
+              @keydown.enter="handleSearchEnter"
             />
           </div>
         </div>
@@ -337,6 +338,12 @@ function handleEnterKey(event: KeyboardEvent) {
   const target = event.target as HTMLInputElement
   if (target !== foodWeightInput.value || !allowEnterSubmit.value) {
     event.preventDefault()
+  }
+}
+
+function handleSearchEnter() {
+  if (filteredRecords.value.length === 1) {
+    selectRecord(filteredRecords.value[0].barcode)
   }
 }
 </script>
