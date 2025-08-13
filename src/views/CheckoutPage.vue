@@ -285,6 +285,7 @@ const selectedRecord = ref<RecordEntry | null>(null)
 
 const formattedAffiliation = computed(() => {
   if (!selectedRecord.value) return ''
+  if (selectedRecord.value.isStaff) return 'Staff'
   if (selectedRecord.value.affiliation === 'Clayton Enrolled Program') return 'Enrolled'
   if (selectedRecord.value.affiliation === 'Formerly Clayton Enrolled') return 'Community'
   return selectedRecord.value.affiliation
@@ -294,6 +295,13 @@ function selectRecord(selectedBarcode: string) {
   barcode.value = selectedBarcode
   searchQuery.value = ''
   allowEnterSubmit.value = false // temporarily block Enter submit
+
+  const record = records.value.find((r) => r.barcode === selectedBarcode)
+  if (record?.isStaff) {
+    personType.value = 'Staff'
+  } else {
+    personType.value = 'Parent/Caregiver'
+  }
 
   nextTick(() => {
     foodWeightInput.value?.focus()

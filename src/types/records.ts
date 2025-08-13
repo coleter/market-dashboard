@@ -5,4 +5,5 @@ export interface RecordEntry {
   affiliation: string
   hasAllInfo: boolean
   marketCheckouts: string[]
+  isStaff: boolean
 }

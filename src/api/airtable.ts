@@ -22,6 +22,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         'Household - # of Adults',
         'Household - # of children',
         'Market Checkout',
+        'Community Site',
       ],
       filterByFormula:
         "AND(AND(NOT({Access Revoked}), NOT({Barcode} = '')), NOT({Name - Shopper #1} = ''))",
@@ -44,6 +45,8 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const adults = record.get('Household - # of Adults') ?? null
     const children = record.get('Household - # of children') ?? null
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
+    const communitySite = (record.get('Community Site') as string) || []
+    const isStaff = communitySite === 'Clayton Staff'
 
     // Compute info completeness
     const hasAllInfo =
@@ -64,6 +67,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       affiliation,
       hasAllInfo,
       marketCheckouts,
+      isStaff,
     }
   })
 }
