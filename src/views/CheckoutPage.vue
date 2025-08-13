@@ -35,6 +35,7 @@
                   <th>Affiliation</th>
                   <th>Last Checkout</th>
                   <th>Info Complete?</th>
+                  <th>Transition Notice?</th>
                 </tr>
               </thead>
               <tbody>
@@ -50,6 +51,14 @@
                     >
                       {{ selectedRecord.hasAllInfo ? 'Yes' : 'No' }}
                     </span>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      v-model="transitionNotice"
+                      @change="handleTransitionNoticeChange"
+                      :disabled="transitionNoticeLoading"
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -173,7 +182,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { submitCheckout, fetchRecords, fetchCheckoutRecords } from '../api/airtable'
+import {
+  submitCheckout,
+  fetchRecords,
+  fetchCheckoutRecords,
+  fetchTransitionNotice,
+  updateTransitionNotice,
+} from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
 const barcode = ref('')
@@ -322,14 +337,27 @@ const lastCheckoutClass = computed(() => {
 
 watch(selectedRecord, async (record) => {
   lastCheckoutDate.value = null
-  if (record?.marketCheckouts?.length) {
-    const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
-    if (checkouts.length > 0) {
-      // Sort by date descending
-      checkouts.sort(
-        (a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime(),
-      )
-      lastCheckoutDate.value = checkouts[0].createdTime
+  transitionNotice.value = false
+
+  if (record) {
+    // Load checkout history
+    if (record?.marketCheckouts?.length) {
+      const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
+      if (checkouts.length > 0) {
+        checkouts.sort(
+          (a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime(),
+        )
+        lastCheckoutDate.value = checkouts[0].createdTime
+      }
+    }
+
+    // Load Transition Notice dynamically
+    try {
+      transitionNoticeLoading.value = true
+      const value = await fetchTransitionNotice(record.id) // will need `id` in RecordEntry
+      transitionNotice.value = value
+    } finally {
+      transitionNoticeLoading.value = false
     }
   }
 })
@@ -345,6 +373,22 @@ function handleSearchEnter(event: KeyboardEvent) {
   if (filteredRecords.value.length === 1) {
     event.preventDefault()
     selectRecord(filteredRecords.value[0].barcode)
+  }
+}
+
+// Transition notice stuff
+const transitionNotice = ref(false)
+const transitionNoticeLoading = ref(false)
+async function handleTransitionNoticeChange() {
+  if (!selectedRecord.value) return
+  try {
+    transitionNoticeLoading.value = true
+    await updateTransitionNotice(selectedRecord.value.id, transitionNotice.value)
+  } catch (err) {
+    alert('Failed to update Transition Notice.')
+    console.error(err)
+  } finally {
+    transitionNoticeLoading.value = false
   }
 }
 </script>

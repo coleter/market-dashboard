@@ -58,6 +58,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       typeof children === 'number'
 
     return {
+      id: record.id,
       barcode: barcodeText,
       name,
       affiliation,
@@ -108,4 +109,35 @@ export async function fetchCheckoutRecords(recordIds: string[]) {
     id: r.id,
     createdTime: r._rawJson.createdTime,
   }))
+}
+
+export async function fetchTransitionNotice(recordId: string): Promise<boolean> {
+  const records = await base(enrollment_id)
+    .select({
+      filterByFormula: `RECORD_ID()='${recordId}'`,
+      fields: ['Transition Notice'],
+      maxRecords: 1,
+    })
+    .all()
+
+  if (!records.length) return false
+  return Boolean(records[0].get('Transition Notice'))
+}
+
+export async function updateTransitionNotice(recordId: string, value: boolean) {
+  const payload = [
+    {
+      id: recordId,
+      fields: {
+        'Transition Notice': value,
+      },
+    },
+  ]
+  try {
+    const updated = await base(enrollment_id).update(payload, { typecast: true })
+    return Boolean(updated[0].get('Transition Notice'))
+  } catch (err) {
+    console.error('Error updating Transition Notice:', err)
+    throw err
+  }
 }
