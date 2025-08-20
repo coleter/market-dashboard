@@ -7,8 +7,8 @@
       </figure>
       <h1 class="title is-3 has-text-centered mb-5">Market Checkout Form</h1>
 
-      <!-- Form -->
-      <div class="container" style="max-width: 1000px" ref="formSection">
+      <!-- Checkout Form -->
+      <div class="container" style="max-width: 1000px">
         <form class="box" @submit.prevent="handleSubmit" @keydown.enter="handleEnterKey">
           <!-- Barcode -->
           <div class="field">
@@ -26,7 +26,7 @@
             </div>
           </div>
 
-          <!-- More info section -->
+          <!-- Profile info section -->
           <div v-if="selectedRecord" class="box mt-4">
             <table class="table is-fullwidth">
               <thead>
@@ -91,7 +91,7 @@
 
           <!-- Food Weight -->
           <div class="field">
-            <label class="label">Please enter the total weight of food (in lbs).</label>
+            <label class="label">Food Weight (in lbs)</label>
             <div class="control">
               <input
                 class="input"
@@ -114,11 +114,11 @@
       </div>
     </div>
 
-    <!-- Records Section -->
+    <!-- Card Lookup Section -->
     <div class="container mt-6" style="max-width: 1000px">
       <h2 class="title is-4 has-text-centered mb-4">Market Card Lookup</h2>
 
-      <!-- Filter + Search Row -->
+      <!-- Filter & Search -->
       <div class="columns is-vcentered mb-4">
         <div class="column is-half">
           <label class="label">Filter by Affiliation:</label>
@@ -191,6 +191,7 @@ import {
 } from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
+// Form vars
 const barcode = ref('')
 const personType = ref('Parent/Caregiver')
 const foodWeight = ref<number | null>(null)
@@ -199,23 +200,24 @@ const allowEnterSubmit = ref(true)
 const barcodeInput = ref<HTMLInputElement | null>(null)
 const foodWeightInput = ref<HTMLInputElement | null>(null)
 
-// Records
+// Lookup vars
 const records = ref<RecordEntry[]>([])
 const loading = ref(true)
 const selectedFilter = ref('all')
 const searchQuery = ref('')
 
-// Handle record click -> auto-fill barcode
-const formSection = ref<HTMLElement | null>(null)
+// More info section
+const selectedRecord = ref<RecordEntry | null>(null)
+const lastCheckoutDate = ref<string | null>(null)
 
-// Row color
+// Row styling helper
 function rowClass(affiliation: string) {
   if (affiliation === 'Clayton Enrolled Program') return 'row-teal'
   if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-orange'
   return ''
 }
 
-// Filtered list
+// Filter/search list
 const filteredRecords = computed(() => {
   let result = records.value
   if (selectedFilter.value === 'enrolled') {
@@ -236,6 +238,7 @@ const filteredRecords = computed(() => {
 
 // Form submission
 async function handleSubmit() {
+  // Ensure valid data
   barcode.value = barcode.value.replace(/\s+/g, '')
   const barcodeRegex = /^2000\d{4}$/
 
@@ -252,6 +255,7 @@ async function handleSubmit() {
     return
   }
 
+  // Actual submission
   try {
     await submitCheckout(barcode.value, personType.value, foodWeight.value!)
     successMessage.value = true
@@ -268,7 +272,7 @@ async function handleSubmit() {
   }
 }
 
-// Load records
+// Fetch records on load
 onMounted(async () => {
   loading.value = true
   try {
@@ -280,9 +284,7 @@ onMounted(async () => {
   }
 })
 
-// More info section
-const selectedRecord = ref<RecordEntry | null>(null)
-
+// Map Airtable affinities to actual used affinities
 const formattedAffiliation = computed(() => {
   if (!selectedRecord.value) return ''
   if (selectedRecord.value.isStaff) return 'Staff'
@@ -291,10 +293,11 @@ const formattedAffiliation = computed(() => {
   return selectedRecord.value.affiliation
 })
 
+// Choose record
 function selectRecord(selectedBarcode: string) {
   barcode.value = selectedBarcode
   searchQuery.value = ''
-  allowEnterSubmit.value = false // temporarily block Enter submit
+  allowEnterSubmit.value = false
 
   const record = records.value.find((r) => r.barcode === selectedBarcode)
   if (record?.isStaff) {
@@ -311,6 +314,8 @@ function selectRecord(selectedBarcode: string) {
   })
 }
 
+// Trigger selectRecord whenever barcode length is 8
+// Allows for typing a number, clicking a record after searching, or scanning a barcode
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
@@ -326,11 +331,11 @@ watch(barcode, (newVal) => {
   }
 })
 
-const lastCheckoutDate = ref<string | null>(null)
+// Recent checkout formatting & color
 const isRecentCheckout = computed(() => {
   if (!lastCheckoutDate.value) return false
   const diff = Date.now() - new Date(lastCheckoutDate.value).getTime()
-  return diff < 6 * 24 * 60 * 60 * 1000 // less than 6 days
+  return diff < 6 * 24 * 60 * 60 * 1000
 })
 
 const formattedLastCheckout = computed(() => {
@@ -343,12 +348,13 @@ const lastCheckoutClass = computed(() => {
   return isRecentCheckout.value ? 'has-text-danger' : ''
 })
 
+// Pull checkout info only when a record is selected
+// Transition notice was used for a specific day so will probably be removed
 watch(selectedRecord, async (record) => {
   lastCheckoutDate.value = null
   transitionNotice.value = false
 
   if (record) {
-    // Load checkout history
     if (record?.marketCheckouts?.length) {
       const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
       if (checkouts.length > 0) {
@@ -359,10 +365,9 @@ watch(selectedRecord, async (record) => {
       }
     }
 
-    // Load Transition Notice dynamically
     try {
       transitionNoticeLoading.value = true
-      const value = await fetchTransitionNotice(record.id) // will need `id` in RecordEntry
+      const value = await fetchTransitionNotice(record.id)
       transitionNotice.value = value
     } finally {
       transitionNoticeLoading.value = false
@@ -370,6 +375,7 @@ watch(selectedRecord, async (record) => {
   }
 })
 
+// Our barcode scanners send an enter keystroke, so this prevents accidental submission
 function handleEnterKey(event: KeyboardEvent) {
   const target = event.target as HTMLInputElement
   if (target !== foodWeightInput.value || !allowEnterSubmit.value) {
@@ -377,6 +383,8 @@ function handleEnterKey(event: KeyboardEvent) {
   }
 }
 
+// Handle enter in search if there's only one record
+// Also handles if barcodes are scanned into search
 function handleSearchEnter(event: KeyboardEvent) {
   if (filteredRecords.value.length === 1) {
     event.preventDefault()
@@ -400,23 +408,3 @@ async function handleTransitionNoticeChange() {
   }
 }
 </script>
-
-<style scoped>
-.table {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.row-teal {
-  background-color: rgba(122, 195, 189, 0.25);
-}
-.row-orange {
-  background-color: rgba(224, 149, 62, 0.2);
-}
-.clickable-row {
-  cursor: pointer;
-}
-.clickable-row:hover {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-}
-</style>

@@ -9,6 +9,7 @@ const key = import.meta.env.VITE_AIRTABLE_TOKEN
 Airtable.configure({ endpointUrl: 'https://api.airtable.com', apiKey: key })
 const base = Airtable.base(base_id)
 
+// Main fetch - profiles and most information is here
 export async function fetchRecords(): Promise<RecordEntry[]> {
   const records = await base(enrollment_id)
     .select({
@@ -48,7 +49,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
 
-    // Compute info completeness
+    // Compute hasAllInfo boolean
     const hasAllInfo =
       !!name &&
       !!affiliation &&
@@ -72,12 +73,14 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
   })
 }
 
+// Mapping for Airtable compatibility
 const PERSON_TYPE_MAP: Record<string, string> = {
   'Parent/Caregiver': 'Parent/Caregiver | Padre/Cuidador',
   Staff: 'Staff / Empleado',
   'Staff - Shopping for a Family': 'Staff - Shopping for a Family',
 }
 
+// Submits checkout record to Airtable
 export async function submitCheckout(barcode: string, personType: string, foodWeight: number) {
   const airtablePersonType = PERSON_TYPE_MAP[personType]
   const payload = [
@@ -98,6 +101,7 @@ export async function submitCheckout(barcode: string, personType: string, foodWe
   }
 }
 
+// Fetch information for last checkout
 export async function fetchCheckoutRecords(recordIds: string[]) {
   if (!recordIds || recordIds.length === 0) return []
 
@@ -115,6 +119,8 @@ export async function fetchCheckoutRecords(recordIds: string[]) {
   }))
 }
 
+// Transition notice will probably be removed, we needed it for a specific day & announcement
+// Fetch transition notice
 export async function fetchTransitionNotice(recordId: string): Promise<boolean> {
   const records = await base(enrollment_id)
     .select({
@@ -128,6 +134,7 @@ export async function fetchTransitionNotice(recordId: string): Promise<boolean> 
   return Boolean(records[0].get('Transition Notice'))
 }
 
+// Update transition notice in Airtable
 export async function updateTransitionNotice(recordId: string, value: boolean) {
   const payload = [
     {
