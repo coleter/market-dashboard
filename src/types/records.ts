@@ -6,4 +6,5 @@ export interface RecordEntry {
   hasAllInfo: boolean
   marketCheckouts: string[]
   isStaff: boolean
+  isRevoked: boolean
 }

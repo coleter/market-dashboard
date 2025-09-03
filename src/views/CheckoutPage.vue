@@ -35,13 +35,14 @@
                   <th>Affiliation</th>
                   <th>Last Checkout</th>
                   <th>Info Complete?</th>
-                  <th>Transition Notice?</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>{{ selectedRecord.name }}</td>
-                  <td>{{ formattedAffiliation }}</td>
+                  <td :class="selectedRecord.isRevoked ? 'has-text-danger' : ''">
+                    {{ formattedAffiliation }}
+                  </td>
                   <td>
                     <span :class="lastCheckoutClass">{{ formattedLastCheckout }}</span>
                   </td>
@@ -51,14 +52,6 @@
                     >
                       {{ selectedRecord.hasAllInfo ? 'Yes' : 'No' }}
                     </span>
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      v-model="transitionNotice"
-                      @change="handleTransitionNoticeChange"
-                      :disabled="transitionNoticeLoading"
-                    />
                   </td>
                 </tr>
               </tbody>
@@ -126,6 +119,7 @@
             <div class="select is-fullwidth">
               <select v-model="selectedFilter">
                 <option value="all">All</option>
+                <option value="active">Active</option>
                 <option value="enrolled">Clayton Enrolled</option>
                 <option value="community">Community / Formerly Enrolled</option>
               </select>
@@ -168,7 +162,7 @@
             v-else
             v-for="record in filteredRecords"
             :key="record.barcode"
-            :class="[rowClass(record.affiliation), 'clickable-row']"
+            :class="[rowClass(record.affiliation, record.isRevoked), 'clickable-row']"
             @click="selectRecord(record.barcode)"
           >
             <td>{{ record.barcode }}</td>
@@ -182,13 +176,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import {
-  submitCheckout,
-  fetchRecords,
-  fetchCheckoutRecords,
-  fetchTransitionNotice,
-  updateTransitionNotice,
-} from '../api/airtable'
+import { submitCheckout, fetchRecords, fetchCheckoutRecords } from '../api/airtable'
 import type { RecordEntry } from '../types/records'
 
 // Form vars
@@ -203,7 +191,7 @@ const foodWeightInput = ref<HTMLInputElement | null>(null)
 // Lookup vars
 const records = ref<RecordEntry[]>([])
 const loading = ref(true)
-const selectedFilter = ref('all')
+const selectedFilter = ref('active')
 const searchQuery = ref('')
 
 // More info section
@@ -211,17 +199,23 @@ const selectedRecord = ref<RecordEntry | null>(null)
 const lastCheckoutDate = ref<string | null>(null)
 
 // Row styling helper
-function rowClass(affiliation: string) {
+function rowClass(affiliation: string, revoked: boolean) {
+  if (revoked) return 'row-grey'
   if (affiliation === 'Clayton Enrolled Program') return 'row-teal'
-  if (['Community', 'Formerly Clayton Enrolled'].includes(affiliation)) return 'row-orange'
+  if (affiliation === 'Community' || affiliation === 'Formerly Clayton Enrolled')
+    return 'row-orange'
   return ''
 }
 
 // Filter/search list
 const filteredRecords = computed(() => {
   let result = records.value
-  if (selectedFilter.value === 'enrolled') {
-    result = result.filter((r) => r.affiliation === 'Clayton Enrolled Program')
+  if (selectedFilter.value === 'active') {
+    result = result.filter((r) => r.isRevoked === false)
+  } else if (selectedFilter.value === 'enrolled') {
+    result = result.filter(
+      (r) => r.affiliation === 'Clayton Enrolled Program' && r.isRevoked === false,
+    )
   } else if (selectedFilter.value === 'community') {
     result = result.filter((r) =>
       ['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation),
@@ -287,11 +281,19 @@ onMounted(async () => {
 // Map Airtable affinities to actual used affinities
 const formattedAffiliation = computed(() => {
   if (!selectedRecord.value) return ''
+  if (selectedRecord.value.isRevoked) return 'REVOKED - ' + getBaseAffiliation()
+  if (selectedRecord.value.isStaff) return 'Staff'
+  return getBaseAffiliation()
+})
+
+// Helper function to get base affiliation without revoked prefix
+function getBaseAffiliation() {
+  if (!selectedRecord.value) return ''
   if (selectedRecord.value.isStaff) return 'Staff'
   if (selectedRecord.value.affiliation === 'Clayton Enrolled Program') return 'Enrolled'
   if (selectedRecord.value.affiliation === 'Formerly Clayton Enrolled') return 'Community'
   return selectedRecord.value.affiliation
-})
+}
 
 // Choose record
 function selectRecord(selectedBarcode: string) {
@@ -334,6 +336,15 @@ watch(barcode, (newVal) => {
 // Recent checkout formatting & color
 const isRecentCheckout = computed(() => {
   if (!lastCheckoutDate.value) return false
+
+  // Check if user is revoked and checked out after 8/1/25
+  if (selectedRecord.value?.isRevoked) {
+    const checkoutDate = new Date(lastCheckoutDate.value)
+    const revokeDate = new Date('2025-08-01')
+    return checkoutDate > revokeDate
+  }
+
+  // Regular logic: red if checkout was within last 6 days
   const diff = Date.now() - new Date(lastCheckoutDate.value).getTime()
   return diff < 6 * 24 * 60 * 60 * 1000
 })
@@ -349,11 +360,8 @@ const lastCheckoutClass = computed(() => {
 })
 
 // Pull checkout info only when a record is selected
-// Transition notice was used for a specific day so will probably be removed
 watch(selectedRecord, async (record) => {
   lastCheckoutDate.value = null
-  transitionNotice.value = false
-
   if (record) {
     if (record?.marketCheckouts?.length) {
       const checkouts = await fetchCheckoutRecords(record.marketCheckouts)
@@ -363,14 +371,6 @@ watch(selectedRecord, async (record) => {
         )
         lastCheckoutDate.value = checkouts[0].createdTime
       }
-    }
-
-    try {
-      transitionNoticeLoading.value = true
-      const value = await fetchTransitionNotice(record.id)
-      transitionNotice.value = value
-    } finally {
-      transitionNoticeLoading.value = false
     }
   }
 })
@@ -389,22 +389,6 @@ function handleSearchEnter(event: KeyboardEvent) {
   if (filteredRecords.value.length === 1) {
     event.preventDefault()
     selectRecord(filteredRecords.value[0].barcode)
-  }
-}
-
-// Transition notice stuff
-const transitionNotice = ref(false)
-const transitionNoticeLoading = ref(false)
-async function handleTransitionNoticeChange() {
-  if (!selectedRecord.value) return
-  try {
-    transitionNoticeLoading.value = true
-    await updateTransitionNotice(selectedRecord.value.id, transitionNotice.value)
-  } catch (err) {
-    alert('Failed to update Transition Notice.')
-    console.error(err)
-  } finally {
-    transitionNoticeLoading.value = false
   }
 }
 </script>

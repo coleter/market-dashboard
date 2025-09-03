@@ -24,9 +24,9 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         'Household - # of children',
         'Market Checkout',
         'Community Site',
+        'Access Revoked',
       ],
-      filterByFormula:
-        "AND(AND(NOT({Access Revoked}), NOT({Barcode} = '')), NOT({Name - Shopper #1} = ''))",
+      filterByFormula: "NOT(OR({Barcode} = '', {Name - Shopper #1} = ''))",
       sort: [{ field: 'Barcode', direction: 'asc' }],
     })
     .all()
@@ -48,6 +48,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
+    const isRevoked = record.get('Access Revoked') === true || record.get('Access Revoked') === 1
 
     // Compute hasAllInfo boolean
     const hasAllInfo =
@@ -69,6 +70,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       hasAllInfo,
       marketCheckouts,
       isStaff,
+      isRevoked,
     }
   })
 }
@@ -117,38 +119,4 @@ export async function fetchCheckoutRecords(recordIds: string[]) {
     id: r.id,
     createdTime: r._rawJson.createdTime,
   }))
-}
-
-// Transition notice will probably be removed, we needed it for a specific day & announcement
-// Fetch transition notice
-export async function fetchTransitionNotice(recordId: string): Promise<boolean> {
-  const records = await base(enrollment_id)
-    .select({
-      filterByFormula: `RECORD_ID()='${recordId}'`,
-      fields: ['Transition Notice'],
-      maxRecords: 1,
-    })
-    .all()
-
-  if (!records.length) return false
-  return Boolean(records[0].get('Transition Notice'))
-}
-
-// Update transition notice in Airtable
-export async function updateTransitionNotice(recordId: string, value: boolean) {
-  const payload = [
-    {
-      id: recordId,
-      fields: {
-        'Transition Notice': value,
-      },
-    },
-  ]
-  try {
-    const updated = await base(enrollment_id).update(payload, { typecast: true })
-    return Boolean(updated[0].get('Transition Notice'))
-  } catch (err) {
-    console.error('Error updating Transition Notice:', err)
-    throw err
-  }
 }

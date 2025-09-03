@@ -110,6 +110,10 @@ input[type='checkbox']:focus {
   background-color: rgba(224, 149, 62, 0.2);
 }
 
+.row-grey {
+  background-color: rgb(245, 245, 245);
+}
+
 /* Row hover/interaction */
 .clickable-row {
   cursor: pointer;
