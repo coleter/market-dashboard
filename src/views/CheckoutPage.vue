@@ -337,10 +337,10 @@ watch(barcode, (newVal) => {
 const isRecentCheckout = computed(() => {
   if (!lastCheckoutDate.value) return false
 
-  // Check if user is revoked and checked out after 8/1/25
+  // Check if user is revoked and checked out after 9/1/25
   if (selectedRecord.value?.isRevoked) {
     const checkoutDate = new Date(lastCheckoutDate.value)
-    const revokeDate = new Date('2025-08-01')
+    const revokeDate = new Date('2025-09-01')
     return checkoutDate > revokeDate
   }
 
