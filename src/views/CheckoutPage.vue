@@ -122,6 +122,7 @@
                 <option value="active">Active</option>
                 <option value="enrolled">Clayton Enrolled</option>
                 <option value="community">Community / Formerly Enrolled</option>
+                <option value="staff">Staff</option>
               </select>
             </div>
           </div>
@@ -220,6 +221,8 @@ const filteredRecords = computed(() => {
     result = result.filter((r) =>
       ['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation),
     )
+  } else if (selectedFilter.value === 'staff') {
+    result = result.filter((r) => r.isStaff && !r.isRevoked)
   }
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
@@ -233,15 +236,15 @@ const filteredRecords = computed(() => {
 // Form submission
 async function handleSubmit() {
   // Ensure valid data
-  barcode.value = barcode.value.replace(/\s+/g, '')
+  barcode.value = (barcode.value || '').toString().replace(/\s+/g, '')
   const barcodeRegex = /^2000\d{4}$/
 
-  if (!barcode.value || !personType.value || foodWeight.value == null) {
+  if (!barcode.value || foodWeight.value == null) {
     alert('Please fill out all fields before submitting.')
     return
   }
   if (!barcodeRegex.test(barcode.value)) {
-    alert('Invalid barcode')
+    alert(`Invalid barcode - does not match 2000XXXX. Barcode: "${barcode.value}"`)
     return
   }
   if (foodWeight.value < 0 || foodWeight.value > 99) {
@@ -259,6 +262,8 @@ async function handleSubmit() {
     barcode.value = ''
     personType.value = 'Parent/Caregiver'
     foodWeight.value = null
+    selectedRecord.value = null
+    lastCheckoutDate.value = null
     nextTick(() => barcodeInput.value?.focus())
   } catch (err) {
     console.error('Airtable submission failed', err)
@@ -318,6 +323,7 @@ function selectRecord(selectedBarcode: string) {
 
 // Trigger selectRecord whenever barcode length is 8
 // Allows for typing a number, clicking a record after searching, or scanning a barcode
+// Now also handles unsynced profiles by showing a notice but still allowing submission
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
@@ -326,10 +332,17 @@ watch(barcode, (newVal) => {
       selectedRecord.value = match
       selectRecord(cleaned)
     } else {
+      // For unsynced profiles, clear selected record but don't prevent submission
       selectedRecord.value = null
+      lastCheckoutDate.value = null
+      // Still focus on food weight input for faster workflow
+      nextTick(() => {
+        foodWeightInput.value?.focus()
+      })
     }
   } else {
     selectedRecord.value = null
+    lastCheckoutDate.value = null
   }
 })
 
