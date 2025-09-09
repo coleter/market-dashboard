@@ -323,10 +323,12 @@ function selectRecord(selectedBarcode: string) {
 
 // Trigger selectRecord whenever barcode length is 8
 // Allows for typing a number, clicking a record after searching, or scanning a barcode
-// Now also handles unsynced profiles by showing a notice but still allowing submission
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
+    // Always prevent immediate submission when barcode changes
+    allowEnterSubmit.value = false
+    
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
     if (match) {
       selectedRecord.value = match
@@ -335,9 +337,14 @@ watch(barcode, (newVal) => {
       // For unsynced profiles, clear selected record but don't prevent submission
       selectedRecord.value = null
       lastCheckoutDate.value = null
+      
       // Still focus on food weight input for faster workflow
       nextTick(() => {
         foodWeightInput.value?.focus()
+        // Re-enable enter submission after delay (same as selectRecord does)
+        setTimeout(() => {
+          allowEnterSubmit.value = true
+        }, 300)
       })
     }
   } else {
