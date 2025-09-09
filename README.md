@@ -9,7 +9,7 @@ Before this project, we were using an Airtable form to submit this information, 
 - No warnings if a participant with revoked access tried to shop, or if there is more than one transaction in a week with the same barcode.
 - A poorly designed interface overall — no value checking or ability to add functionality later.
 
-Since our team does not have permission to modify the Airtable fields or form directly, this system was built to leverage Airtable’s strengths while taking advantage of the flexibility of a standalone application. This flexibility allows additional functionality, such as checking whether a family profile is complete, supporting a "Staff" affiliation, and other enhancements to improve usability and data management.
+Since our team does not have permissions to modify the Airtable fields or form directly, this system was built to leverage Airtable’s strengths while also taking advantage of the flexibility of a standalone application. This allows additional functionality, such as checking whether a family profile is complete, supporting a "Staff" affiliation, and other enhancements to improve usability and data management.
 
 ---
 
