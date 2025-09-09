@@ -219,7 +219,7 @@ const filteredRecords = computed(() => {
     )
   } else if (selectedFilter.value === 'community') {
     result = result.filter((r) =>
-      ['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation),
+      (['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation)) && r.isRevoked === false,
     )
   } else if (selectedFilter.value === 'staff') {
     result = result.filter((r) => r.isStaff && !r.isRevoked)
