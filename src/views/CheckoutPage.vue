@@ -237,7 +237,8 @@ const filteredRecords = computed(() => {
 async function handleSubmit() {
   // Ensure valid data
   barcode.value = (barcode.value || '').toString().replace(/\s+/g, '')
-  const barcodeRegex = /^2000\d{4}$/
+const barcodeRegex = /^[12]\d{7}$/
+
 
   if (!barcode.value || foodWeight.value == null) {
     alert('Please fill out all fields before submitting.')
@@ -328,7 +329,7 @@ watch(barcode, (newVal) => {
   if (cleaned.length === 8) {
     // Always prevent immediate submission when barcode changes
     allowEnterSubmit.value = false
-    
+
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
     if (match) {
       selectedRecord.value = match
@@ -337,7 +338,7 @@ watch(barcode, (newVal) => {
       // For unsynced profiles, clear selected record but don't prevent submission
       selectedRecord.value = null
       lastCheckoutDate.value = null
-      
+
       // Still focus on food weight input for faster workflow
       nextTick(() => {
         foodWeightInput.value?.focus()
