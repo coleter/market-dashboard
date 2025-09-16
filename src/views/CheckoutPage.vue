@@ -235,7 +235,7 @@ const filteredRecords = computed(() => {
 async function handleSubmit() {
   // Ensure valid data
   barcode.value = (barcode.value || '').toString().replace(/\s+/g, '')
-  const barcodeRegex = /^2000\d{4}$/
+  const barcodeRegex = /^[12]\d{7}$/
 
   if (!barcode.value || foodWeight.value == null) {
     alert('Please fill out all fields before submitting.')
