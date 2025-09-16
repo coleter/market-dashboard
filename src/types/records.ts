@@ -7,4 +7,5 @@ export interface RecordEntry {
   marketCheckouts: string[]
   isStaff: boolean
   isRevoked: boolean
+  firstCheckoutDate?: string | null
 }

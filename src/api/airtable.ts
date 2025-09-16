@@ -25,13 +25,13 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         'Market Checkout',
         'Community Site',
         'Access Revoked',
+        'First Checkout Date',
       ],
       filterByFormula: "NOT(OR({Barcode} = '', {Name - Shopper #1} = ''))",
-      sort: [{ field: 'Barcode', direction: 'asc' }],
     })
     .all()
 
-  return records.map((record) => {
+  const transformedRecords = records.map((record) => {
     const barcodeValue = record.get('Barcode')
     const barcodeText =
       typeof barcodeValue === 'object' && barcodeValue !== null && 'text' in barcodeValue
@@ -42,13 +42,14 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const affiliation = (record.get('Affiliation') as string) || ''
     const phone = (record.get('Household Primary Phone') as string) || ''
     const neighborhood = (record.get('Neighborhood') as string) || ''
-    const ethnicity = record.get('Ethnicity') ?? [] // Could be [] or null
+    const ethnicity = record.get('Ethnicity') ?? []
     const adults = record.get('Household - # of Adults') ?? null
     const children = record.get('Household - # of children') ?? null
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
     const isRevoked = record.get('Access Revoked') === true || record.get('Access Revoked') === 1
+    const firstCheckoutDate = record.get('First Checkout Date') as string | null
 
     // Compute hasAllInfo boolean
     const hasAllInfo =
@@ -71,7 +72,35 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       marketCheckouts,
       isStaff,
       isRevoked,
+      firstCheckoutDate,
     }
+  })
+
+  // Client-side sorting: oldest first checkout date to newest, then never checked out. Subsort by barcode
+  return transformedRecords.sort((a, b) => {
+    // If both have first checkout dates, sort by date (oldest first)
+    if (a.firstCheckoutDate && b.firstCheckoutDate) {
+      const dateComparison =
+        new Date(a.firstCheckoutDate).getTime() - new Date(b.firstCheckoutDate).getTime()
+      // If dates are the same, sort by barcode
+      if (dateComparison === 0) {
+        return parseInt(a.barcode) - parseInt(b.barcode)
+      }
+      return dateComparison
+    }
+
+    // If only a has a date, a comes first
+    if (a.firstCheckoutDate && !b.firstCheckoutDate) {
+      return -1
+    }
+
+    // If only b has a date, b comes first
+    if (!a.firstCheckoutDate && b.firstCheckoutDate) {
+      return 1
+    }
+
+    // If neither has a date, sort by barcode numerically
+    return parseInt(a.barcode) - parseInt(b.barcode)
   })
 }
 
@@ -94,6 +123,7 @@ export async function submitCheckout(barcode: string, personType: string, foodWe
       },
     },
   ]
+
   try {
     const records = await base(checkout_id).create(payload, { typecast: true })
     return records[0]

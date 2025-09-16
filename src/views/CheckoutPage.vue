@@ -214,12 +214,10 @@ const filteredRecords = computed(() => {
   if (selectedFilter.value === 'active') {
     result = result.filter((r) => r.isRevoked === false)
   } else if (selectedFilter.value === 'enrolled') {
-    result = result.filter(
-      (r) => r.affiliation === 'Clayton Enrolled Program' && r.isRevoked === false,
-    )
+    result = result.filter((r) => r.affiliation === 'Clayton Enrolled Program' && !r.isRevoked)
   } else if (selectedFilter.value === 'community') {
-    result = result.filter((r) =>
-      (['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation)) && r.isRevoked === false,
+    result = result.filter(
+      (r) => ['Community', 'Formerly Clayton Enrolled'].includes(r.affiliation) && !r.isRevoked,
     )
   } else if (selectedFilter.value === 'staff') {
     result = result.filter((r) => r.isStaff && !r.isRevoked)
@@ -237,8 +235,7 @@ const filteredRecords = computed(() => {
 async function handleSubmit() {
   // Ensure valid data
   barcode.value = (barcode.value || '').toString().replace(/\s+/g, '')
-const barcodeRegex = /^[12]\d{7}$/
-
+  const barcodeRegex = /^2000\d{4}$/
 
   if (!barcode.value || foodWeight.value == null) {
     alert('Please fill out all fields before submitting.')
@@ -324,12 +321,10 @@ function selectRecord(selectedBarcode: string) {
 
 // Trigger selectRecord whenever barcode length is 8
 // Allows for typing a number, clicking a record after searching, or scanning a barcode
+// Now also handles unsynced profiles by showing a notice but still allowing submission
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
-    // Always prevent immediate submission when barcode changes
-    allowEnterSubmit.value = false
-
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
     if (match) {
       selectedRecord.value = match
@@ -338,14 +333,9 @@ watch(barcode, (newVal) => {
       // For unsynced profiles, clear selected record but don't prevent submission
       selectedRecord.value = null
       lastCheckoutDate.value = null
-
       // Still focus on food weight input for faster workflow
       nextTick(() => {
         foodWeightInput.value?.focus()
-        // Re-enable enter submission after delay (same as selectRecord does)
-        setTimeout(() => {
-          allowEnterSubmit.value = true
-        }, 300)
       })
     }
   } else {
