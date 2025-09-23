@@ -32,7 +32,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     })
     .all()
 
-  const transformedRecords = records.map((record) => {
+  const transformedRecords = records.map((record, index) => {
     const barcodeValue = record.get('Barcode')
     const barcodeText =
       typeof barcodeValue === 'object' && barcodeValue !== null && 'text' in barcodeValue
@@ -54,7 +54,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const firstCheckoutDate = record.get('First Checkout Date') as string | null
 
     // Debug logging for the first few records
-    if (transformedRecords.length < 3) {
+    if (index < 3) {
       console.log(`Debug for ${name} (${barcodeText}):`, {
         phone: phone,
         phoneValid: !!(phone && phone.trim() !== ''),
