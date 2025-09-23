@@ -53,25 +53,6 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const isRevoked = record.get('Access Revoked') === true || record.get('Access Revoked') === 1
     const firstCheckoutDate = record.get('First Checkout Date') as string | null
 
-    // Debug logging for the first few records
-    if (index < 3) {
-      console.log(`Debug for ${name} (${barcodeText}):`, {
-        phone: phone,
-        phoneValid: !!(phone && phone.trim() !== ''),
-        neighborhood: neighborhood,
-        neighborhoodValid: !!(neighborhood && neighborhood.trim() !== ''),
-        ethnicity: ethnicity,
-        ethnicityValid: !!(Array.isArray(ethnicity) && ethnicity.length > 0),
-        children: children,
-        childrenValid: !!(typeof children === 'number'),
-        childrensAges: childrensAges,
-        childrensAgesValid: !!(Array.isArray(childrensAges) && childrensAges.length > 0)
-      })
-
-      // Log all available fields to help debug
-      console.log('All record fields:', record._rawJson.fields)
-    }
-
     // Check if all required fields are present and not blank
     const hasAllInfo = !!(
       phone && phone.trim() !== '' &&
