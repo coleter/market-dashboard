@@ -67,6 +67,9 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         childrensAges: childrensAges,
         childrensAgesValid: !!(Array.isArray(childrensAges) && childrensAges.length > 0)
       })
+
+      // Log all available fields to help debug
+      console.log('All record fields:', record._rawJson.fields)
     }
 
     // Check if all required fields are present and not blank
