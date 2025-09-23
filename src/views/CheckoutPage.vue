@@ -48,9 +48,9 @@
                   </td>
                   <td>
                     <span
-                      :class="hasAllRequiredInfo ? 'has-text-success' : 'has-text-danger'"
+                      :class="selectedRecord.hasAllInfo ? 'has-text-success' : 'has-text-danger'"
                     >
-                      {{ hasAllRequiredInfo ? 'Yes' : 'No' }}
+                      {{ selectedRecord.hasAllInfo ? 'Yes' : 'No' }}
                     </span>
                   </td>
                 </tr>
@@ -229,28 +229,6 @@ const filteredRecords = computed(() => {
     )
   }
   return result
-})
-
-// Check if all required info is present
-const hasAllRequiredInfo = computed(() => {
-  if (!selectedRecord.value) return false
-
-  const record = selectedRecord.value
-
-  // Check if all required fields are present and not blank
-  const requiredFields = [
-    record.householdPrimaryPhone,
-    record.neighborhood,
-    record.ethnicity,
-    record.householdNumChildren,
-    record.childrensAges
-  ]
-
-  return requiredFields.every(field =>
-    field !== undefined &&
-    field !== null &&
-    String(field).trim() !== ''
-  )
 })
 
 // Form submission

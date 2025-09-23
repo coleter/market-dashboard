@@ -22,6 +22,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         'Ethnicity',
         'Household - # of Adults',
         'Household - # of children',
+        'Children\'s Ages',
         'Market Checkout',
         'Community Site',
         'Access Revoked',
@@ -45,23 +46,21 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const ethnicity = record.get('Ethnicity') ?? []
     const adults = record.get('Household - # of Adults') ?? null
     const children = record.get('Household - # of children') ?? null
+    const childrensAges = (record.get('Children\'s Ages') as string) || ''
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
     const isRevoked = record.get('Access Revoked') === true || record.get('Access Revoked') === 1
     const firstCheckoutDate = record.get('First Checkout Date') as string | null
 
-    // Compute hasAllInfo boolean
-    const hasAllInfo =
-      !!name &&
-      !!affiliation &&
-      !!barcodeText &&
-      !!phone &&
-      !!neighborhood &&
-      Array.isArray(ethnicity) &&
-      ethnicity.length > 0 &&
-      typeof adults === 'number' &&
-      typeof children === 'number'
+    // Check if all required fields are present and not blank
+    const hasAllInfo = !!(
+      phone && phone.trim() !== '' &&
+      neighborhood && neighborhood.trim() !== '' &&
+      Array.isArray(ethnicity) && ethnicity.length > 0 &&
+      typeof children === 'number' &&
+      childrensAges && childrensAges.trim() !== ''
+    )
 
     return {
       id: record.id,
