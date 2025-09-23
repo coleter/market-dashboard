@@ -22,7 +22,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         'Ethnicity',
         'Household - # of Adults',
         'Household - # of children',
-        'fldY8QBBuOu1aQAzq',
+        'Children\'s Ages',
         'Market Checkout',
         'Community Site',
         'Access Revoked',
@@ -46,7 +46,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const ethnicity = record.get('Ethnicity') ?? []
     const adults = record.get('Household - # of Adults') ?? null
     const children = record.get('Household - # of children') ?? null
-    const childrensAges = record.get('fldY8QBBuOu1aQAzq') ?? []
+    const childrensAges = record.get('Children\'s Ages') ?? []
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
