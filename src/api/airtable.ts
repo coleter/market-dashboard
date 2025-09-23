@@ -46,7 +46,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
     const ethnicity = record.get('Ethnicity') ?? []
     const adults = record.get('Household - # of Adults') ?? null
     const children = record.get('Household - # of children') ?? null
-    const childrensAges = (record.get('fldY8QBBuOu1aQAzq') as string) || ''
+    const childrensAges = record.get('fldY8QBBuOu1aQAzq') ?? []
     const marketCheckouts = (record.get('Market Checkout') as string[]) || []
     const communitySite = (record.get('Community Site') as string) || []
     const isStaff = communitySite === 'Clayton Staff'
@@ -65,7 +65,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
         children: children,
         childrenValid: !!(typeof children === 'number'),
         childrensAges: childrensAges,
-        childrensAgesValid: !!(childrensAges && childrensAges.trim() !== '')
+        childrensAgesValid: !!(Array.isArray(childrensAges) && childrensAges.length > 0)
       })
     }
 
@@ -75,7 +75,7 @@ export async function fetchRecords(): Promise<RecordEntry[]> {
       neighborhood && neighborhood.trim() !== '' &&
       Array.isArray(ethnicity) && ethnicity.length > 0 &&
       typeof children === 'number' &&
-      childrensAges && childrensAges.trim() !== ''
+      Array.isArray(childrensAges) && childrensAges.length > 0
     )
 
     return {
