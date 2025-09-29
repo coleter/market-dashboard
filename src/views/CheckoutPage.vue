@@ -325,6 +325,10 @@ function selectRecord(selectedBarcode: string) {
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
+    allowEnterSubmit.value = false
+    setTimeout(() => {
+      allowEnterSubmit.value = true
+    }, 300)
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
     selectedRecord.value = match || null
     nextTick(() => foodWeightInput.value?.focus())
