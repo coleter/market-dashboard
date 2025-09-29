@@ -242,7 +242,7 @@ async function handleSubmit() {
     return
   }
   if (!barcodeRegex.test(barcode.value)) {
-    alert(`Invalid barcode - does not match 2000XXXX. Barcode: "${barcode.value}"`)
+    alert(`Invalid barcode - does not match 1XXXXXXX or 2XXXXXXX. Barcode: "${barcode.value}"`)
     return
   }
   if (foodWeight.value < 0 || foodWeight.value > 99) {
@@ -321,27 +321,17 @@ function selectRecord(selectedBarcode: string) {
 
 // Trigger selectRecord whenever barcode length is 8
 // Allows for typing a number, clicking a record after searching, or scanning a barcode
-// Now also handles unsynced profiles by showing a notice but still allowing submission
+// Handles scanner's enter keystroke without automatically submitting
 watch(barcode, (newVal) => {
   const cleaned = newVal?.toString().trim() || ''
   if (cleaned.length === 8) {
     const match = records.value.find((r) => r.barcode.trim() === cleaned)
-    if (match) {
-      selectedRecord.value = match
-      selectRecord(cleaned)
-    } else {
-      // For unsynced profiles, clear selected record but don't prevent submission
-      selectedRecord.value = null
-      lastCheckoutDate.value = null
-      // Still focus on food weight input for faster workflow
-      nextTick(() => {
-        foodWeightInput.value?.focus()
-      })
-    }
-  } else {
-    selectedRecord.value = null
-    lastCheckoutDate.value = null
+    selectedRecord.value = match || null
+    nextTick(() => foodWeightInput.value?.focus())
+    return
   }
+  selectedRecord.value = null
+  lastCheckoutDate.value = null
 })
 
 // Recent checkout formatting & color
