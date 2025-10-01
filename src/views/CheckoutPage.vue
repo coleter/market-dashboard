@@ -382,14 +382,13 @@ watch(selectedRecord, async (record) => {
 
 // Our barcode scanners send an enter keystroke, so this prevents accidental submission
 function handleEnterKey(event: KeyboardEvent) {
-  const target = event.target as HTMLInputElement
-  if (target !== foodWeightInput.value || !allowEnterSubmit.value) {
+  if (!allowEnterSubmit.value) {
     event.preventDefault()
   }
 }
 
 // Handle enter in search if there's only one record
-// Also handles if barcodes are scanned into search
+// Also handles scanner enter keystroke if barcodes are scanned into search
 function handleSearchEnter(event: KeyboardEvent) {
   if (filteredRecords.value.length === 1) {
     event.preventDefault()
